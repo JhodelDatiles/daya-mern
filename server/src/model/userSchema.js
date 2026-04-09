@@ -1,4 +1,4 @@
-import mongoose from "mongoose"; // ✅ This is the ESM way
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {

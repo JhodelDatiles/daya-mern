@@ -1,0 +1,22 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: dark --default, light
+}
+
+@theme {
+  /* Branding & Headlines */
+  --font-caprasimo: "Caprasimo", "cursive";
+  /* Primary UI & Interactive Elements */
+  --font-outfit: "Outfit", "sans-serif";
+  /* Secondary Info & Support Text */
+  --font-montserrat: "Montserrat", "sans-serif";
+  /* Long-form Reading */
+  --font-roboto: "Roboto", "sans-serif";
+
+  /* Custom Font Sizes */
+  --text-hero: 4rem;       /* 64px - For landing page headlines */
+  --text-display: 2.25rem;  /* 36px - For Page Titles */
+  --text-section: 1.5rem;   /* 24px - For Card/Section Headers */
+  --text-md: 1.125rem;      /* 18px - For prominent UI text */
+  --text-tiny: 0.75rem;     /* 12px - For secondary captions */
+}
