@@ -1,6 +1,7 @@
 import User from "../model/userSchema.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 
 // Cookies options
 const getCookieOptions = () => {
@@ -71,23 +72,45 @@ export const refreshToken = async (req, res) => {
 
 export const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    // Check if user already exists
+    const { username, email, password } = req.body;
+
+    // 1. Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      return res.status(400).json({
+        message: "Invalid email format",
+      });
+    }
+
+    // 2. Validate password (strong)
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
+
+    if (!password || !passwordRegex.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 8 characters and include uppercase, lowercase, number, and special character",
+      });
+    }
+
+    // 3. Check if user exists
     const userExists = await User.findOne({ email });
-    if (userExists)
+    if (userExists) {
       return res.status(409).json({ message: "User already exists!" });
-    // If user does not exist in the db create the user
-    const user = await User.create({
-      email,
-      password,
+    }
+
+    // 4. Create user
+    const user = await User.create({ username, email, password });
+
+    res.status(201).json({
+      message: "Registration successful! Redirecting to login...",
     });
-    //Success message
-    res.status(201).json({ message: "User created successfully!" });
   } catch (error) {
     console.error("Registration Failed", error);
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
 
@@ -95,13 +118,13 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     // Look for the email in the db
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
     // compage the email password to the password user input
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    setTokenCookies(res, user);
+    await setTokenCookies(res, user);
     // Success message
     res.status(200).json({ message: "Login successful" });
   } catch (error) {

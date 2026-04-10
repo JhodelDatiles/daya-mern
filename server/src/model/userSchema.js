@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
   {
@@ -21,7 +22,7 @@ const userSchema = new mongoose.Schema(
     // 2. PROFILE ESSENTIALS
     username: {
       type: String,
-      unique: true,
+      // unique: true,
       sparse: true, // Allows multiple nulls if username is optional
       trim: true,
     },

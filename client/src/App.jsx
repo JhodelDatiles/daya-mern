@@ -10,14 +10,15 @@ import { Toaster, ToastBar } from "react-hot-toast";
 import HomePage from "./pages/HomePage";
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
+import DashBoard from "./pages/DashBoard";
 
 function AppInner() {
   return (
     <>
       <Toaster
-        position="top-right"
+        position="top-center" // Changed from "top-right"
         reverseOrder={false}
-        containerStyle={{ top: 70, right: 20 }}
+        containerStyle={{ top: 20 }} // Adjusted top spacing for center alignment
         toastOptions={{
           duration: 3000,
           style: {
@@ -39,18 +40,22 @@ function AppInner() {
             toast={t}
             style={{
               ...t.style,
+              // Note: If you have custom CSS animations like slideInRight,
+              // you might want to change them to a 'fadeIn' or 'slideInDown'
+              // for a better look at the top-center position.
               animation: t.visible
-                ? "slideInRight 0.35s ease-out"
-                : "slideOutRight 0.35s ease-in forwards",
+                ? "fadeIn 0.35s ease-out"
+                : "fadeOut 0.35s ease-in forwards",
             }}
           />
         )}
       </Toaster>
 
       <Routes>
-        <Route path="/" element={<HomePage />}/>
-        <Route path="/register" element={<RegisterPage />}/>
-        <Route path="/login" element={<LoginPage />}/>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<DashBoard />} />
       </Routes>
     </>
   );
