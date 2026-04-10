@@ -1,6 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { AuthAPI } from "../../services/api";
 
 const RegisterForm = () => {
+  const navigate = useNavigate();
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // form state
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -8,42 +16,92 @@ const RegisterForm = () => {
     confirmPassword: "",
   });
 
-  const [loading, setLoading] = useState(false);
+  // email validation
+  const isEmailValid =
+    formData.email.length > 0 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
 
+  // password validation
+  const isStrongPassword =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/.test(
+      formData.password,
+    );
+
+  // handle input changes
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
+  // handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isEmailValid) {
+      toast.error("Please enter a valid email");
+      return;
+    }
+
+    if (!isStrongPassword) {
+      toast.error("Password does not meet requirements");
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
 
     setLoading(true);
-    console.log("Registering user:", formData);
-    // Add your API call logic here
-    setLoading(false);
+
+    try {
+      const res = await AuthAPI.register(formData);
+
+      toast.success(res?.data?.message || "Registration successful!");
+
+      setIsSubmitted(true);
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Something went wrong";
+
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // redirect after success
+  useEffect(() => {
+    if (isSubmitted) {
+      const timer = setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isSubmitted, navigate]);
+
   const InputField =
-    "w-full h-full min-w-[350px] p-2 border-blue-500/30 input bg-transparent hover:border-blue-500/100 hover:input-info focus:input-info";
+    "w-full min-w-[350px] p-2 border-blue-500/30 input bg-transparent hover:border-blue-500/100 hover:input-info focus:input-info";
 
   return (
-    <div className="h-screen bg-white text-black flex flex-col justify-center items-center">
+    <div className="h-screen bg-white flex justify-center items-center">
       <form
         onSubmit={handleSubmit}
-        className="w-auto rounded-2xl p-10 shadow-2xl inset-shadow-sm text-black font-outfit text-tiny"
+        className="p-10 rounded-2xl shadow-2xl font-outfit text-black"
       >
-        {/* Header Section */}
-        <div className="text-center">
-          <h1 className="font-outfit text-section font-bold">Create account</h1>
-        </div>
+        <h1 className="text-center font-bold text-xl">Create account</h1>
 
-        {/* Inputs */}
         <div className="space-y-4 my-5">
-          <div className="form-control">
+          {/* username */}
+          <div>
             <input
               type="text"
               name="username"
@@ -54,7 +112,8 @@ const RegisterForm = () => {
             />
           </div>
 
-          <div className="form-control">
+          {/* email */}
+          <div>
             <input
               type="email"
               name="email"
@@ -64,9 +123,18 @@ const RegisterForm = () => {
               onChange={handleChange}
               className={InputField}
             />
+
+            <p
+              className={`text-xs mt-1 ${
+                isEmailValid ? "text-green-500" : "text-gray-400"
+              }`}
+            >
+              {isEmailValid ? "Valid email" : "Enter a valid email"}
+            </p>
           </div>
 
-          <div className="form-control">
+          {/* password */}
+          <div>
             <input
               type="password"
               name="password"
@@ -78,9 +146,19 @@ const RegisterForm = () => {
             />
           </div>
 
-          <div className="form-control">
+          {/* password feedback */}
+          <p
+            className={`text-xs ${
+              isStrongPassword ? "text-green-500" : "text-gray-400"
+            }`}
+          >
+            Must be 8+ chars, include upper, lower, number & symbol
+          </p>
+
+          {/* confirm password */}
+          <div>
             <input
-              type="confirmPassword"
+              type="password"
               name="confirmPassword"
               required
               placeholder="Confirm Password"
@@ -91,24 +169,21 @@ const RegisterForm = () => {
           </div>
         </div>
 
-        {/* Button */}
+        {/* submit button */}
         <button
           type="submit"
           disabled={loading}
-          className="btn btn-primary btn-block font-montserrat uppercase tracking-widest"
+          className="btn btn-primary w-full"
         >
-          {loading ? (
-            <span className="loading loading-spinner"></span>
-          ) : (
-            "Sign Up"
-          )}
+          {loading ? "Loading..." : "Sign Up"}
         </button>
 
+        {/* Footer */}
         <div className="text-center mt-5">
           <p className="font-body text-sm opacity-70">
             Already have an account?{" "}
             <a href="/login" className="link link-primary font-bold">
-              Login
+              click here.
             </a>
           </p>
         </div>
