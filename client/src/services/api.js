@@ -1,38 +1,53 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = import.meta.env.VITE_URL_DEV || 'http://localhost:5000/api';
-// Axios instance
+// BASE API URL (from Vite env or fallback to localhost)
+const API_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:5000/api";
+
+// Axios instance (centralized HTTP client)
 const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
+  withCredentials: true, // allows cookies (accessToken, refreshToken)
 });
 
-// Interceptor
+// Interceptor (response handler)
+// - Returns response directly on success
+// - Ensures backend error response is passed to catch block properly
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // This ensures that the error object passed to your 'catch' block 
-    // contains the response data from your Backend.
-    return Promise.reject(error); 
-  }
+    return Promise.reject(error);
+  },
 );
 
-// Auth API
+// AUTH API METHODS
 export const AuthAPI = {
+  // Register new user
   register: async (userData) => {
-    const res = await api.post('/auth/register', userData);
+    const res = await api.post("/auth/register", userData);
     return res.data;
   },
+
+  // Login user
   login: async (credentials) => {
-    const res = await api.post('/auth/login', credentials);
+    const res = await api.post("/auth/login", credentials);
     return res.data;
   },
+
+  // Logout user (clears cookies + refresh token)
   logout: async () => {
-    const res = await api.post('/auth/logout');
+    const res = await api.post("/auth/logout");
     return res.data;
   },
+
+  // Refresh access token using refresh token cookie
   refreshToken: async () => {
-    const response = await api.post('/auth/refresh-token');
-    return response.data;
+    const res = await api.post("/auth/refresh-token");
+    return res.data;
   },
-}
+
+  // Verify email using token from URL
+  verifyEmail: async (token) => {
+    const res = await api.get(`/auth/verify-email/${token}`);
+    return res.data;
+  },
+};
