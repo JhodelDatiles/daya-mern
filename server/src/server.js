@@ -12,7 +12,7 @@ const app = express();
 // ✅ CORS — must come BEFORE routes and body parsers
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173", // your Vite dev port
+    origin: config.clientUrl, // your Vite dev port
     credentials: true, // required because Axios uses withCredentials: true
   })
 );

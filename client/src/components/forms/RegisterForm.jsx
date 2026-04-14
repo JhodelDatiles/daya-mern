@@ -5,10 +5,12 @@ import { AuthAPI } from "../../services/api";
 
 const RegisterForm = () => {
   const navigate = useNavigate();
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  // form state
+  // STATE MANAGEMENT
+  const [isSubmitted, setIsSubmitted] = useState(false); // tracks success state
+  const [loading, setLoading] = useState(false); // loading spinner
+
+  // Form data state
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -16,55 +18,67 @@ const RegisterForm = () => {
     confirmPassword: "",
   });
 
-  // email validation
+  // VALIDATION LOGIC
+
+  // Email validation
   const isEmailValid =
     formData.email.length > 0 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
 
-  // password validation
+  // Password strength validation
   const isStrongPassword =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/.test(
       formData.password,
     );
 
-  // handle input changes
+  // HANDLE INPUT CHANGES
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    // update form state dynamically
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  // handle submit
+  // FORM SUBMISSION
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // 1. Email validation
     if (!isEmailValid) {
       toast.error("Please enter a valid email");
       return;
     }
 
+    // 2. Password strength validation
     if (!isStrongPassword) {
       toast.error("Password does not meet requirements");
       return;
     }
 
+    // 3. Password match validation
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match!");
       return;
     }
 
+    // 4. Set loading state
     setLoading(true);
 
     try {
+      // 5. Call backend API
       const res = await AuthAPI.register(formData);
 
-      toast.success(res?.data?.message || "Registration successful!");
+      // 6. Success feedback
+      toast.success(
+        res?.data?.message || "Verification sent, check your gmail to verify!",
+      );
 
       setIsSubmitted(true);
     } catch (error) {
+      // 7. Error handling
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
@@ -73,34 +87,38 @@ const RegisterForm = () => {
 
       toast.error(errorMessage);
     } finally {
+      // 8. Reset loading
       setLoading(false);
     }
   };
 
-  // redirect after success
+  // REDIRECT AFTER SUCCESS
   useEffect(() => {
     if (isSubmitted) {
       const timer = setTimeout(() => {
-        navigate("/dashboard");
-      }, 1000);
+        navigate("/login"); // redirect to login page
+      }, 3000);
 
-      return () => clearTimeout(timer);
+      return () => clearTimeout(timer); // cleanup
     }
   }, [isSubmitted, navigate]);
 
+  // INPUT STYLE
   const InputField =
     "w-full min-w-[350px] p-2 border-blue-500/30 input bg-transparent hover:border-blue-500/100 hover:input-info focus:input-info";
 
+  // COMPONENT UI
   return (
     <div className="h-screen bg-white flex justify-center items-center">
       <form
         onSubmit={handleSubmit}
         className="p-10 rounded-2xl shadow-2xl font-outfit text-black"
       >
+        {/* Header */}
         <h1 className="text-center font-bold text-xl">Create account</h1>
 
         <div className="space-y-4 my-5">
-          {/* username */}
+          {/* Username */}
           <div>
             <input
               type="text"
@@ -112,7 +130,7 @@ const RegisterForm = () => {
             />
           </div>
 
-          {/* email */}
+          {/* Email */}
           <div>
             <input
               type="email"
@@ -124,6 +142,7 @@ const RegisterForm = () => {
               className={InputField}
             />
 
+            {/* Email feedback */}
             <p
               className={`text-xs mt-1 ${
                 isEmailValid ? "text-green-500" : "text-gray-400"
@@ -133,7 +152,7 @@ const RegisterForm = () => {
             </p>
           </div>
 
-          {/* password */}
+          {/* Password */}
           <div>
             <input
               type="password"
@@ -144,18 +163,18 @@ const RegisterForm = () => {
               onChange={handleChange}
               className={InputField}
             />
+
+            {/* Password feedback */}
+            <p
+              className={`text-xs mt-1 ${
+                isStrongPassword ? "text-green-500" : "text-gray-400"
+              }`}
+            >
+              Must be 8+ chars, include upper, lower, number & symbol
+            </p>
           </div>
 
-          {/* password feedback */}
-          <p
-            className={`text-xs ${
-              isStrongPassword ? "text-green-500" : "text-gray-400"
-            }`}
-          >
-            Must be 8+ chars, include upper, lower, number & symbol
-          </p>
-
-          {/* confirm password */}
+          {/* Confirm Password */}
           <div>
             <input
               type="password"
@@ -169,7 +188,7 @@ const RegisterForm = () => {
           </div>
         </div>
 
-        {/* submit button */}
+        {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}
