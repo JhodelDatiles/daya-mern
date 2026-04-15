@@ -1,4 +1,5 @@
 import User from "../model/userSchema.js";
+import GhostUser from "../model/ghostUserSchema.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -116,57 +117,51 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    // Check if user already exists
-    const userExists = await User.findOne({ email });
-
-    // If user exists
-    if (userExists) {
-      // Check if email is not verified
-      if (!userExists.isEmailVerified) {
-        // Generate new verification token
-        const newToken = crypto.randomBytes(32).toString("hex");
-
-        // Assign new token and expiration
-        userExists.verification = {
-          token: newToken,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        };
-
-        // Save updated user
-        await userExists.save();
-
-        // Resend verification email
-        await sendVerificationEmail(userExists);
-
-        return res.status(200).json({ message: "Verification email resent." });
-      }
-
+    // Check if verified user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res.status(409).json({ message: "User already exists!" });
     }
+
+    // Check if ghost user exists
+    let ghostUser = await GhostUser.findOne({ email });
 
     // Generate verification token
     const token = crypto.randomBytes(32).toString("hex");
 
-    // Create new user
-    const user = await User.create({
+    if (ghostUser) {
+      // Update existing ghost user
+      ghostUser.username = username || ghostUser.username;
+      ghostUser.password = password; // will be hashed via pre-save
+      ghostUser.verification.token = token;
+      ghostUser.verification.expiresAt = new Date(
+        Date.now() + 24 * 60 * 60 * 1000
+      );
+
+      await ghostUser.save();
+      await sendVerificationEmail(ghostUser);
+
+      return res.status(200).json({
+        message: "Verification email resent.",
+      });
+    }
+
+    // Create new ghost user
+    const newGhostUser = await GhostUser.create({
       username,
       email,
       password,
-      isEmailVerified: false,
       verification: {
         token,
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     });
 
-    // Send verification email
-    try {
-      await sendVerificationEmail(user);
-    } catch (error) {
-      console.error("Failed to send email verification", error);
-    }
+    await sendVerificationEmail(newGhostUser);
 
-    res.status(201).json({ message: "Registration successful!" });
+    res.status(201).json({
+      message: "Registration successful! Please verify your email.",
+    });
   } catch (error) {
     console.error("Registration Failed", error);
     res.status(500).json({
@@ -252,44 +247,47 @@ export const logout = async (req, res, next) => {
 // Verify email
 export const verifyEmail = async (req, res) => {
   try {
-    // Get token from URL params
     const { token } = req.params;
 
-    // Find user using verification token
-    let user = await User.findOne({ "verification.token": token });
+    const ghostUser = await GhostUser.findOne({
+      "verification.token": token,
+    }).select("+password");
 
-    // If no user found, token is invalid or expired
-    if (!user) {
+    if (!ghostUser) {
       return res.status(400).json({
         message: "Invalid or expired token.",
       });
     }
 
-    // If already verified (double click or refresh)
-    if (user.isEmailVerified) {
-      return res.status(200).json({ message: "Already verified." });
-    }
-
-    // Check if token is expired
+    // Check expiration
     if (
-      !user.verification?.expiresAt ||
-      user.verification.expiresAt < new Date()
+      !ghostUser.verification?.expiresAt ||
+      ghostUser.verification.expiresAt < new Date()
     ) {
       return res.status(400).json({ message: "Token expired." });
     }
 
-    // Mark user as verified
-    user.isEmailVerified = true;
-    user.status = "active";
+    // Create real user (IMPORTANT: password already hashed)
+    const user = new User({
+      username: ghostUser.username,
+      email: ghostUser.email,
+      password: ghostUser.password,
+      isEmailVerified: true,
+      status: "active",
+    });
 
-    // Remove verification token
-    user.verification.token = null;
-    user.verification.expiresAt = null;
+    // Prevent double hashing
+    user.markModified("password");
+    user.$locals = { skipHash: true };
 
-    // Save updated user
     await user.save();
 
-    res.status(200).json({ message: "Email verified successfully!" });
+    // Delete ghost user
+    await GhostUser.deleteOne({ _id: ghostUser._id });
+
+    res.status(200).json({
+      message: "Email verified successfully!",
+    });
   } catch (error) {
     console.error("Verification error:", error);
 

@@ -81,15 +81,13 @@ const userSchema = new mongoose.Schema(
 
 // PASSWORD HASHING MIDDLEWARE
 userSchema.pre("save", async function () {
-  // Only hash if password was modified
   if (!this.isModified("password")) return;
 
-  try {
-    const salt = await bcrypt.genSalt(11); // generate salt
-    this.password = await bcrypt.hash(this.password, salt); // hash password
-  } catch (error) {
-    throw error; // let mongoose handle error
-  }
+  // prevent double hashing
+  if (this.password.startsWith("$2b$")) return;
+
+  const salt = await bcrypt.genSalt(11);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // MODEL EXPORT
