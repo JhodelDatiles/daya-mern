@@ -1,30 +1,28 @@
+// src/model/userSchema.js
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
   {
-    // 1. UNIQUE IDENTIFIERS & AUTHENTICATION
     email: {
       type: String,
       required: [true, "Email is required"],
-      unique: true, // prevents duplicate accounts
-      lowercase: true, // normalize email
-      trim: true, // remove spaces
-      match: [/^\S+@\S+\.\S+$/, "Please use a valid email address"], // basic email validation
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, "Please use a valid email address"],
     },
 
     password: {
       type: String,
       required: [true, "Password is required"],
-      select: false, // do NOT return password in queries
+      select: false,
       minlength: [8, "Password must be at least 8 characters long"],
     },
 
-    // 2. PROFILE INFORMATION
     username: {
       type: String,
-      // unique: true,
-      sparse: true, // allows multiple null values
+      sparse: true,
       trim: true,
     },
 
@@ -33,7 +31,6 @@ const userSchema = new mongoose.Schema(
       default: "default-avatar.png",
     },
 
-    // 3. ACCOUNT STATUS & ROLES
     role: {
       type: String,
       enum: ["user", "admin", "moderator"],
@@ -46,8 +43,7 @@ const userSchema = new mongoose.Schema(
       default: "pending",
     },
 
-    // 4. EMAIL VERIFICATION SYSTEM
-    isEmailVerified: {
+    isVerified: {
       type: Boolean,
       default: false,
     },
@@ -55,41 +51,34 @@ const userSchema = new mongoose.Schema(
     verification: {
       token: {
         type: String,
-        default: null, // stores verification token
+        default: null,
+      },
+      version: {
+        type: Number,
+        default: 1,
       },
       expiresAt: {
         type: Date,
-        default: null, // expiration time of token
+        default: null,
       },
     },
 
-    codeExpires: {
-      type: Date, // used for OTP / reset codes
-    },
-
-    // 5. SESSION MANAGEMENT (REFRESH TOKENS)
     refreshToken: {
       type: [String],
-      default: [], // ensures array is always initialized
-      select: false, // hidden unless explicitly selected
+      default: [],
+      select: false,
     },
   },
-  {
-    timestamps: true, // auto add createdAt & updatedAt
-  },
+  { timestamps: true },
 );
 
-// PASSWORD HASHING MIDDLEWARE
 userSchema.pre("save", async function () {
+  if (this.$locals?.skipHash) return;
   if (!this.isModified("password")) return;
-
-  // prevent double hashing
-  if (this.password.startsWith("$2b$")) return;
 
   const salt = await bcrypt.genSalt(11);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// MODEL EXPORT
 const User = mongoose.model("User", userSchema);
 export default User;

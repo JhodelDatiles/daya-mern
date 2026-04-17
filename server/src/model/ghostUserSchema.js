@@ -1,3 +1,4 @@
+// src/model/ghostUserSchema.js
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
@@ -9,33 +10,47 @@ const ghostUserSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      match: [/^\S+@\S+\.\S+$/, "Please use a valid email address"],
     },
+
     password: {
       type: String,
-      required: true,
-      minlength: 8,
+      required: [true, "Password is required"],
       select: false,
+      minlength: [8, "Password must be at least 8 characters long"],
     },
+
     username: {
       type: String,
       sparse: true,
       trim: true,
     },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     verification: {
-      token: { type: String, required: true },
-      expiresAt: { type: Date, required: true },
+      token: {
+        type: String,
+        default: null,
+      },
+      version: {
+        type: Number,
+        default: 1,
+      },
+      expiresAt: {
+        type: Date,
+        default: null,
+      },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
+// Delete the entire document after 24 hours
+ghostUserSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
 
-// TTL
-ghostUserSchema.index(
-  { createdAt: 1 },
-  { expireAfterSeconds: 10 }
-);
-
-// hash password
 ghostUserSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 
