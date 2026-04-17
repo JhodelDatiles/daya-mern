@@ -5,6 +5,7 @@ import {
   logout,
   refreshToken,
   verifyEmail,
+  resendVerification,
 } from "../controller/authController.js";
 
 const router = express.Router();
@@ -13,6 +14,7 @@ const router = express.Router();
 router.post("/register", register); // Add validation here later
 router.post("/login", login); // Add rate limiting here later
 router.get('/verify-email/:token', verifyEmail);
+router.post('/resend-verification', resendVerification);
 
 // Session Management
 router.post("/refresh-token", refreshToken);

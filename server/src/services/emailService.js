@@ -75,31 +75,31 @@ export const sendSecurityCode = async (user, code, type) => {
 };
 
 // EMAIL VERIFICATION
-export const sendVerificationEmail = async (user) => {
-  // Extract token from user document
-  const token = user.verification?.token;
-
-  // Build unique verification URL
+export const sendVerificationEmail = async ({ user, token }) => {
   const verificationUrl = `${config.clientUrl}/verify-email/${token}`;
 
-  // Check environment
   const isProduction = process.env.NODE_ENV === "production";
 
-  // DEVELOPMENT: use Nodemailer
   if (!isProduction) {
     try {
+      const email = user?.email;
+
+      if (!email) {
+        throw new Error("sendVerificationEmail: missing user.email");
+      }
+
       await transporter.sendMail({
         from: `"Daya Dev" <${process.env.EMAIL_USER}>`,
-        to: user.email,
+        to: email,
         subject: "Verify Your Email — DAYA (DEV)",
         html: `
-          <h2>Verify Your Email</h2>
-          <p>Click below:</p>
-          <a href="${verificationUrl}">${verificationUrl}</a>
-        `,
+        <h2>Verify Your Email</h2>
+        <p>Click below:</p>
+        <a href="${verificationUrl}">${verificationUrl}</a>
+      `,
       });
 
-      console.log("Dev email sent:", user.email);
+      console.log("Dev email sent:", email);
       return true;
     } catch (error) {
       console.error("Nodemailer error:", error.message);
@@ -107,7 +107,6 @@ export const sendVerificationEmail = async (user) => {
     }
   }
 
-  // PRODUCTION: use Brevo
   try {
     await sendEmail({
       to: user.email,
@@ -115,7 +114,6 @@ export const sendVerificationEmail = async (user) => {
       html: verificationEmailTemplate(user.username, verificationUrl),
     });
 
-    console.log("Brevo email sent:", user.email);
     return true;
   } catch (error) {
     console.error("Brevo error:", error.message);

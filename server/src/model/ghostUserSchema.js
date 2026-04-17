@@ -1,3 +1,4 @@
+// src/model/ghostUserSchema.js
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
@@ -10,32 +11,46 @@ const ghostUserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+
     password: {
       type: String,
       required: true,
       minlength: 8,
       select: false,
     },
+
     username: {
       type: String,
-      sparse: true,
       trim: true,
+      sparse: true,
     },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     verification: {
-      token: { type: String, required: true },
-      expiresAt: { type: Date, required: true },
+      token: {
+        type: String, // FIX: was [String]
+        required: true,
+      },
+      version: {
+        type: Number,
+        default: 1,
+      },
+      expiresAt: {
+        type: Date,
+        required: true,
+      },
     },
   },
   { timestamps: true }
 );
 
-// TTL
-ghostUserSchema.index(
-  { createdAt: 1 },
-  { expireAfterSeconds: 10 }
-);
+// REMOVE TTL (you already confirmed it causes confusion)
+// ghostUserSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
 
-// hash password
 ghostUserSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 

@@ -7,6 +7,7 @@ import { AuthAPI } from "../../services/api";
 const LoginForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showResend, setShowResend] = useState(false);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -51,12 +52,38 @@ const LoginForm = () => {
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
         "Something went wrong. Please try again.";
 
       toast.error(errorMessage);
+
+      if (errorMessage.toLowerCase().includes("verify")) {
+        setShowResend(true);
+      }
+
       console.error("Login failed:", errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!isEmailValid) {
+      toast.error("Enter a valid email first");
+      return;
+    }
+
+    try {
+      const res = await AuthAPI.resendVerification(formData.email);
+      toast.success(res.message || "Verification email sent!");
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to resend email";
+
+      toast.error(errorMessage);
     }
   };
 
@@ -100,6 +127,16 @@ const LoginForm = () => {
             className={InputField}
           />
         </div>
+
+        {showResend && (
+          <button
+            type="button"
+            onClick={handleResend}
+            className="btn btn-outline btn-sm mt-3 w-full"
+          >
+            Resend Verification Email
+          </button>
+        )}
 
         <button
           type="submit"
