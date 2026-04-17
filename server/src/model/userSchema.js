@@ -53,6 +53,10 @@ const userSchema = new mongoose.Schema(
         type: String,
         default: null,
       },
+      version: {
+        type: Number,
+        default: 1,
+      },
       expiresAt: {
         type: Date,
         default: null,
@@ -65,7 +69,7 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.pre("save", async function () {

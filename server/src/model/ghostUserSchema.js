@@ -10,19 +10,20 @@ const ghostUserSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      match: [/^\S+@\S+\.\S+$/, "Please use a valid email address"],
     },
 
     password: {
       type: String,
-      required: true,
-      minlength: 8,
+      required: [true, "Password is required"],
       select: false,
+      minlength: [8, "Password must be at least 8 characters long"],
     },
 
     username: {
       type: String,
-      trim: true,
       sparse: true,
+      trim: true,
     },
 
     isVerified: {
@@ -32,8 +33,8 @@ const ghostUserSchema = new mongoose.Schema(
 
     verification: {
       token: {
-        type: String, // FIX: was [String]
-        required: true,
+        type: String,
+        default: null,
       },
       version: {
         type: Number,
@@ -41,15 +42,14 @@ const ghostUserSchema = new mongoose.Schema(
       },
       expiresAt: {
         type: Date,
-        required: true,
+        default: null,
       },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
-
-// REMOVE TTL (you already confirmed it causes confusion)
-// ghostUserSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
+// Delete the entire document after 24 hours
+ghostUserSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
 
 ghostUserSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
