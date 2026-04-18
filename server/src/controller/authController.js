@@ -141,7 +141,13 @@ export const register = async (req, res) => {
       ghostUser.username = username || ghostUser.username;
       ghostUser.password = password;
       ghostUser.verification.token = token;
-      ghostUser.verification.expiresAt = new Date(Date.now() + 15000);
+      ghostUser.verification.expiresAt = new Date(Date.now() + 86400000);
+      // OTP / High Security	5 Minutes	300000
+      // Password Reset	1 Hour	3600000
+      // Account Verification	24 Hours	86400000
+      // Extended Verification	72 Hours	259200000
+      // Short-term Sharing	7 Days	604800000
+      // Long-term Access	30 Days	2592000000
       ghostUser.verification.version += 1;
 
       // save updated ghost user to database
