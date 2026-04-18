@@ -8,10 +8,11 @@ import {
 import { Toaster, ToastBar } from "react-hot-toast";
 // Import Pagesa
 import HomePage from "./pages/HomePage";
-import RegisterPage from "./pages/RegisterPage";
-import LoginPage from "./pages/LoginPage";
+// import RegisterPage from "./pages/RegisterPage";
+// import LoginPage from "./pages/LoginPage";
 import VerifyEmail from "./pages/VerifyEmailPage";
 import DashBoard from "./pages/DashBoard";
+import AuthPage from "./pages/AuthPage";
 
 function AppInner() {
   return (
@@ -54,8 +55,8 @@ function AppInner() {
 
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/login" element={<LoginPage />} />
+<Route path="/login" element={<AuthPage initialMode="login" />} />
+<Route path="/register" element={<AuthPage initialMode="register" />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/dashboard" element={<DashBoard />} />
       </Routes>
