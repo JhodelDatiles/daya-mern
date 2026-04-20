@@ -1,4 +1,3 @@
-// src/model/ghostUserSchema.js
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
@@ -48,6 +47,7 @@ const ghostUserSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
 // Delete the entire document after 24 hours
 ghostUserSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
 

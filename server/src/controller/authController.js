@@ -48,40 +48,38 @@ const getCookieOptions = () => {
 // Tokens setter
 // creates JWT tokens and sends them to client as cookies
 // data flow: user -> JWT -> cookies -> browser
-const setTokenCookies = async (res, user) => {
-  // create access token (short-lived)
+const setTokenCookies = async (res, user, rememberMe = false) => {
   const accessToken = jwt.sign(
-    { id: user._id, role: user.role }, // payload from user data
+    { id: user._id, role: user.role },
     config.jwtAccessSecret,
     { expiresIn: "15m" },
   );
 
-  // create refresh token (long-lived)
-  const refreshToken = jwt.sign({ id: user._id }, config.jwtRefreshSecret, {
-    expiresIn: "7d",
-  });
+  const refreshToken = jwt.sign(
+    { id: user._id },
+    config.jwtRefreshSecret,
+    { expiresIn: rememberMe ? "7d" : "1d" },
+  );
 
-  // limit number of stored refresh tokens per user
   if (user.refreshToken.length >= 5) {
     user.refreshToken.shift();
   }
 
-  // store new refresh token in database
   user.refreshToken.push(refreshToken);
   await user.save();
 
   const cookieOptions = getCookieOptions();
 
-  // send access token to client browser via cookie
   res.cookie("accessToken", accessToken, {
     ...cookieOptions,
     maxAge: 15 * 60 * 1000,
   });
 
-  // send refresh token to client browser via cookie
   res.cookie("refreshToken", refreshToken, {
     ...cookieOptions,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: rememberMe
+      ? 7 * 24 * 60 * 60 * 1000
+      : 24 * 60 * 60 * 1000,
   });
 
   return { accessToken, refreshToken };
@@ -194,7 +192,7 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     // extract email and password from request
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
 
     const normalizedEmail = normalizeEmail(email);
 
@@ -216,18 +214,17 @@ export const login = async (req, res) => {
 
       // compare entered password with hashed password in database
       const isMatch = await bcrypt.compare(password, user.password);
-
       if (!isMatch) {
         return errorResponse(res, 401, "Invalid credentials");
       }
 
-      // generate tokens and send to client
-      await setTokenCookies(res, user);
+      // generate tokens and send to client (rememberMe now passed)
+      await setTokenCookies(res, user, rememberMe);
 
       return successResponse(res, 200, "Login successful");
     }
 
-    // check if user exists in ghost collection (not verified yet)
+    // check ghost users
     const ghostUser = await GhostUser.findOne({ email: normalizedEmail });
 
     if (ghostUser) {
@@ -238,7 +235,6 @@ export const login = async (req, res) => {
       );
     }
 
-    // fallback if user not found
     return errorResponse(res, 401, "Invalid credentials");
   } catch {
     return errorResponse(res, 500, "Internal server error");

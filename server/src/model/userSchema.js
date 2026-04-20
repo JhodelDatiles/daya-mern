@@ -1,4 +1,3 @@
-// src/model/userSchema.js
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
@@ -49,18 +48,9 @@ const userSchema = new mongoose.Schema(
     },
 
     verification: {
-      token: {
-        type: String,
-        default: null,
-      },
-      version: {
-        type: Number,
-        default: 1,
-      },
-      expiresAt: {
-        type: Date,
-        default: null,
-      },
+      token: { type: String, default: null },
+      version: { type: Number, default: 1 },
+      expiresAt: { type: Date, default: null },
     },
 
     refreshToken: {
@@ -72,6 +62,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// password hashing
 userSchema.pre("save", async function () {
   if (this.$locals?.skipHash) return;
   if (!this.isModified("password")) return;
