@@ -13,6 +13,8 @@ import HomePage from "./pages/HomePage";
 import VerifyEmail from "./pages/VerifyEmailPage";
 import DashBoard from "./pages/DashBoard";
 import AuthPage from "./pages/AuthPage";
+import ForgotPassword from "./pages/ForgotPasswordPage";
+import ResetPassword from "./pages/ResetPasswordPage";
 
 function AppInner() {
   return (
@@ -55,10 +57,18 @@ function AppInner() {
 
       <Routes>
         <Route path="/" element={<HomePage />} />
-<Route path="/login" element={<AuthPage initialMode="login" />} />
-<Route path="/register" element={<AuthPage initialMode="register" />} />
+
+        <Route path="/login" element={<AuthPage initialMode="login" />} />
+        <Route path="/register" element={<AuthPage initialMode="register" />} />
+
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+
         <Route path="/dashboard" element={<DashBoard />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

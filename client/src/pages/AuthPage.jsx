@@ -5,7 +5,7 @@
 //                  <Route path="/register" element={<AuthPage initialMode="register" />} />
 
 import React, { useState, useEffect } from "react"; // UPDATED
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { AuthAPI } from "../services/api";
@@ -134,7 +134,9 @@ const LoginForm = ({ onSwitch }) => {
             className="checkbox checkbox-primary checkbox-sm" />
           <span className="text-sm text-base-content/70">Remember me</span>
         </label>
-        <a href="/forgot-password" className="text-sm link link-primary font-medium">Forgot password?</a>
+        <Link to="/forgot-password" className="text-sm link link-primary font-medium">
+          Forgot password?
+        </Link>
       </div>
 
       {showResend && (

@@ -48,8 +48,8 @@ export const sendSecurityCode = async (user, code, type) => {
       to: user.email,
       subject:
         type === "password"
-          ? "Password Reset Code — EKOMERS"
-          : "Account Deletion Code — EKOMERS",
+          ? "Password Reset Code — Daya"
+          : "Account Deletion Code — Daya",
       text: `Your security code is: ${code}. It expires in 10 minutes.`,
       html: `
         <div style="font-family: sans-serif; max-width: 400px; margin: auto; padding: 40px; background: #0a0a0a; color: #fff; border-radius: 16px; text-align: center;">
@@ -117,6 +117,42 @@ export const sendVerificationEmail = async ({ user, token }) => {
     return true;
   } catch (error) {
     console.error("Brevo error:", error.message);
+    return false;
+  }
+};
+
+export const sendPasswordResetEmail = async ({ email, resetURL }) => {
+  try {
+    const isProduction = process.env.NODE_ENV === "production";
+
+    if (!isProduction) {
+      await transporter.sendMail({
+        from: `"Daya Dev" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Password Reset — DAYA",
+        html: `
+          <h2>Password Reset</h2>
+          <p>Click the link below to reset your password:</p>
+          <a href="${resetURL}">${resetURL}</a>
+        `,
+      });
+
+      console.log("Dev reset email sent:", email);
+      return true;
+    }
+
+    await sendEmail({
+      to: email,
+      subject: "Password Reset — DAYA",
+      html: `
+        <p>Click to reset password:</p>
+        <a href="${resetURL}">${resetURL}</a>
+      `,
+    });
+
+    return true;
+  } catch (error) {
+    console.error("Reset email failed:", error.message);
     return false;
   }
 };
