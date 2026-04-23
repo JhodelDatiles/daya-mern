@@ -33,7 +33,6 @@ api.interceptors.response.use(
 
 // AUTH API METHODS
 // each function calls backend endpoints and returns response data
-
 export const AuthAPI = {
   // REGISTER
   // receives userData from frontend form (username, email, password, confirmPassword)
@@ -86,6 +85,27 @@ export const AuthAPI = {
   // backend generates new token if needed and sends email again
   resendVerification: async (email) => {
     const res = await api.post("/auth/resend-verification", { email });
+    return res.data;
+  },
+
+  // FORGOT PASSWORD
+  // receives email from frontend
+  // sends POST request to /auth/forgot-password
+  // backend checks if user exists (silently), generates reset token,
+  // saves hashed token + expiry, and sends reset email if valid
+  // always returns success message to prevent email enumeration attacks
+  forgotPassword: async (email) => {
+    const res = await api.post("/auth/forgot-password", { email });
+    return res.data;
+  },
+
+  // RESET PASSWORD
+  // receives token from URL + new password from frontend
+  // sends POST request to /auth/reset-password/:token
+  // backend hashes token, finds matching user with valid expiry,
+  // updates password (handled by pre-save hook), and clears reset fields
+  resetPassword: async (token, data) => {
+    const res = await api.post(`/auth/reset-password/${token}`, data);
     return res.data;
   },
 };

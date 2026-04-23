@@ -4,7 +4,10 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { config } from "../envconfig.js";
-import { sendVerificationEmail } from "../services/emailService.js";
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+} from "../services/emailService.js";
 
 // GLOBAL EMAIL NORMALIZER
 // takes email string from request (req.body)
@@ -55,11 +58,9 @@ const setTokenCookies = async (res, user, rememberMe = false) => {
     { expiresIn: "15m" },
   );
 
-  const refreshToken = jwt.sign(
-    { id: user._id },
-    config.jwtRefreshSecret,
-    { expiresIn: rememberMe ? "7d" : "1d" },
-  );
+  const refreshToken = jwt.sign({ id: user._id }, config.jwtRefreshSecret, {
+    expiresIn: rememberMe ? "7d" : "1d",
+  });
 
   if (user.refreshToken.length >= 5) {
     user.refreshToken.shift();
@@ -77,9 +78,7 @@ const setTokenCookies = async (res, user, rememberMe = false) => {
 
   res.cookie("refreshToken", refreshToken, {
     ...cookieOptions,
-    maxAge: rememberMe
-      ? 7 * 24 * 60 * 60 * 1000
-      : 24 * 60 * 60 * 1000,
+    maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
   });
 
   return { accessToken, refreshToken };
@@ -390,5 +389,98 @@ export const resendVerification = async (req, res) => {
     return successResponse(res, 200, "Verification email sent!");
   } catch {
     return errorResponse(res, 500, "Failed to resend email");
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    // normalize incoming email (lowercase + trim)
+    const normalizedEmail = normalizeEmail(req.body.email);
+
+    // check if user exists in database
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // prevents email enumeration (security best practice)
+    // always return success even if email does not exist
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: "If that email exists, a reset link was sent",
+      });
+    }
+
+    // generate raw reset token (sent to user)
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    // hash token before saving (never store raw token)
+    user.resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    // set expiration time (15 minutes)
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+
+    // save updated user with reset fields
+    await user.save();
+
+    // create reset URL using raw token
+    const resetURL = `${config.clientUrl}/reset-password/${resetToken}`;
+
+    // send reset email to user
+    await sendPasswordResetEmail({
+      email: user.email,
+      resetURL,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Reset link sent",
+    });
+  } catch (err) {
+    // internal server error
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    // hash incoming token from URL (must match stored hashed token)
+    const token = crypto
+      .createHash("sha256")
+      .update(req.params.token)
+      .digest("hex");
+
+    // find user with valid token and not expired
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    }).select("+resetPasswordToken +resetPasswordExpires");
+
+    // token invalid or expired
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired token",
+      });
+    }
+
+    // set new password (pre-save hook will hash it)
+    user.password = req.body.password;
+
+    // clear reset fields after successful use
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    // save updated user (triggers password hashing)
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+    });
+  } catch (err) {
+    // internal server error
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
