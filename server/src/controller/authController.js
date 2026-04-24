@@ -124,6 +124,11 @@ export const register = async (req, res) => {
     // extract user input from request body (frontend form)
     const { username, email, password, confirmPassword } = req.body;
 
+    // checks if the password has whitespaces in it
+    if (!password || /\s/.test(password)) {
+      return errorResponse(res, 400, "Password must not contain spaces");
+    }
+
     // normalize email before database operations
     const normalizedEmail = normalizeEmail(email);
 
@@ -168,7 +173,7 @@ export const register = async (req, res) => {
       password,
       verification: {
         token,
-        expiresAt: new Date(Date.now() + 15000),
+        expiresAt: new Date(Date.now() + 86400000),
         version: 1,
       },
     });
@@ -194,6 +199,11 @@ export const login = async (req, res) => {
     const { email, password, rememberMe } = req.body;
 
     const normalizedEmail = normalizeEmail(email);
+
+    // if there's a whitespaces in the password throw this generic error
+    if (!password || /\s/.test(password)) {
+      return errorResponse(res, 400, "Invalid credentials");
+    }
 
     // find user in database including hidden fields
     const user = await User.findOne({ email: normalizedEmail }).select(
@@ -450,6 +460,12 @@ export const resetPassword = async (req, res) => {
       .createHash("sha256")
       .update(req.params.token)
       .digest("hex");
+
+    const { password } = req.body; // get the password
+    // check if the password has a whitespaces in it
+    if (!password || /\s/.test(password)) {
+      return errorResponse(res, 400, "Password must not contain spaces");
+    }
 
     // find user with valid token and not expired
     const user = await User.findOne({

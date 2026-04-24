@@ -52,8 +52,14 @@ const LoginForm = ({ onSwitch }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isEmailValid) { toast.error("Please enter a valid email"); return; }
-    if (!formData.password) { toast.error("Password is required"); return; }
+    if (!isEmailValid) {
+      toast.error("Please enter a valid email");
+      return;
+    }
+    if (!formData.password) {
+      toast.error("Password is required");
+      return;
+    }
     setLoading(true);
     try {
       const res = await AuthAPI.login({ ...formData, rememberMe });
@@ -65,7 +71,7 @@ const LoginForm = ({ onSwitch }) => {
           JSON.stringify({
             email: formData.email,
             expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
-          })
+          }),
         );
       } else {
         localStorage.removeItem("rememberLogin");
@@ -76,7 +82,8 @@ const LoginForm = ({ onSwitch }) => {
     } catch (error) {
       const errorMessage = error.message;
       toast.error(errorMessage);
-      if (errorMessage.toLowerCase().includes("unverified")) setShowResend(true);
+      if (errorMessage.toLowerCase().includes("unverified"))
+        setShowResend(true);
       console.error("Login failed:", errorMessage);
     } finally {
       setLoading(false);
@@ -84,13 +91,20 @@ const LoginForm = ({ onSwitch }) => {
   };
 
   const handleResend = async () => {
-    if (!isEmailValid) { toast.error("Enter a valid email first"); return; }
+    if (!isEmailValid) {
+      toast.error("Enter a valid email first");
+      return;
+    }
     setResendLoading(true);
     try {
       const res = await AuthAPI.resendVerification(formData.email);
       toast.success(res.message || "Verification email sent!");
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || "Failed to resend email");
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to resend email",
+      );
     } finally {
       setResendLoading(false);
     }
@@ -106,23 +120,37 @@ const LoginForm = ({ onSwitch }) => {
       <div className="space-y-3">
         <div>
           <input
-            type="email" name="email" required placeholder="Email Address"
-            value={formData.email} onChange={handleChange}
+            type="email"
+            name="email"
+            required
+            placeholder="Email Address"
+            value={formData.email}
+            onChange={handleChange}
             className="input input-bordered w-full h-11"
           />
-          <p className={`text-xs mt-1 ${isEmailValid ? "text-success" : "text-base-content/50"}`}>
+          <p
+            className={`text-xs mt-1 ${isEmailValid ? "text-success" : "text-base-content/50"}`}
+          >
             {isEmailValid ? "Valid email" : "Enter a valid email"}
           </p>
         </div>
 
         <div className="relative">
           <input
-            type={showPassword ? "text" : "password"} name="password" required placeholder="Password"
-            value={formData.password} onChange={handleChange}
+            type={showPassword ? "text" : "password"}
+            name="password"
+            required
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
             className="input input-bordered w-full h-11 pr-11"
           />
-          <button type="button" onClick={() => setShowPassword((p) => !p)} tabIndex={-1}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/50 hover:text-base-content transition-colors">
+          <button
+            type="button"
+            onClick={() => setShowPassword((p) => !p)}
+            tabIndex={-1}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/50 hover:text-base-content transition-colors"
+          >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
@@ -130,25 +158,47 @@ const LoginForm = ({ onSwitch }) => {
 
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}
-            className="checkbox checkbox-primary checkbox-sm" />
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="checkbox checkbox-primary checkbox-sm"
+          />
           <span className="text-sm text-base-content/70">Remember me</span>
         </label>
-        <Link to="/forgot-password" className="text-sm link link-primary font-medium">
+        <Link
+          to="/forgot-password"
+          className="text-sm link link-primary font-medium"
+        >
           Forgot password?
         </Link>
       </div>
 
       {showResend && (
-        <button type="button" onClick={handleResend} disabled={resendLoading}
-          className={`btn btn-outline btn-sm w-full ${resendLoading ? "btn-disabled" : ""}`}>
-          {resendLoading ? <span className="loading loading-spinner loading-xs" /> : "Resend Verification Email"}
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={resendLoading}
+          className={`btn btn-outline btn-sm w-full ${resendLoading ? "btn-disabled" : ""}`}
+        >
+          {resendLoading ? (
+            <span className="loading loading-spinner loading-xs" />
+          ) : (
+            "Resend Verification Email"
+          )}
         </button>
       )}
 
-      <button type="submit" disabled={loading}
-        className={`btn btn-primary w-full ${loading ? "btn-disabled" : ""}`}>
-        {loading ? <span className="loading loading-spinner loading-sm" /> : "Login"}
+      <button
+        type="submit"
+        disabled={loading}
+        className={`btn btn-primary w-full ${loading ? "btn-disabled" : ""}`}
+      >
+        {loading ? (
+          <span className="loading loading-spinner loading-sm" />
+        ) : (
+          "Login"
+        )}
       </button>
     </form>
   );
@@ -175,7 +225,7 @@ const RegisterForm = ({ onSwitch }) => {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
 
   const isStrongPassword =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/.test(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=\S+$).{8,}$/.test(
       formData.password,
     );
 
@@ -277,7 +327,7 @@ const RegisterForm = ({ onSwitch }) => {
           <p
             className={`text-xs mt-1 ${isStrongPassword ? "text-success" : "text-base-content/50"}`}
           >
-            Must be 8+ chars, include upper, lower, number & symbol
+            Must be 8+ chars, include upper, lower, number, symbol & no spaces
           </p>
         </div>
 

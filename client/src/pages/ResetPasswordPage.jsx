@@ -20,7 +20,9 @@ const ResetPassword = () => {
 
   // password strength validation (must match backend rules)
   const isStrongPassword =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/.test(password);
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=\S+$).{8,}$/.test(
+      password,
+    );
 
   // handles password reset submission
   const handleSubmit = async (e) => {
@@ -101,7 +103,7 @@ const ResetPassword = () => {
                 isStrongPassword ? "text-success" : "text-base-content/50"
               }`}
             >
-              Must be 8+ chars, include upper, lower, number & symbol
+              Must be 8+ chars, include upper, lower, number, symbol & no spaces
             </p>
           </div>
 
